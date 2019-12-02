@@ -65,12 +65,6 @@ impl<H: 'static> H2Writer<H> {
     }
 }
 
-impl<H: 'static> Drop for H2Writer<H> {
-    fn drop(&mut self) {
-        self.settings.release_bytes(self.buffer.take());
-    }
-}
-
 impl<H: 'static> Writer for H2Writer<H> {
     fn written(&self) -> u64 {
         self.written

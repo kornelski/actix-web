@@ -135,7 +135,6 @@ struct Inner<H> {
     client_timeout: u64,
     client_shutdown: u64,
     ka_enabled: bool,
-    bytes: Rc<SharedBytesPool>,
     messages: &'static RequestPool,
     date: Cell<Option<Date>>,
 }
@@ -169,7 +168,6 @@ impl<H> ServiceConfig<H> {
             ka_enabled,
             client_timeout,
             client_shutdown,
-            bytes: Rc::new(SharedBytesPool::new()),
             messages: RequestPool::pool(settings),
             date: Cell::new(None),
         }))
@@ -197,11 +195,7 @@ impl<H> ServiceConfig<H> {
     }
 
     pub(crate) fn get_bytes(&self) -> BytesMut {
-        self.0.bytes.get_bytes()
-    }
-
-    pub(crate) fn release_bytes(&self, bytes: BytesMut) {
-        self.0.bytes.release_bytes(bytes)
+        BytesMut::new()
     }
 
     pub(crate) fn get_request(&self) -> Request {
@@ -441,31 +435,6 @@ impl fmt::Write for Date {
         self.bytes[self.pos..self.pos + len].copy_from_slice(s.as_bytes());
         self.pos += len;
         Ok(())
-    }
-}
-
-#[derive(Debug)]
-pub(crate) struct SharedBytesPool(RefCell<VecDeque<BytesMut>>);
-
-impl SharedBytesPool {
-    pub fn new() -> SharedBytesPool {
-        SharedBytesPool(RefCell::new(VecDeque::with_capacity(128)))
-    }
-
-    pub fn get_bytes(&self) -> BytesMut {
-        if let Some(bytes) = self.0.borrow_mut().pop_front() {
-            bytes
-        } else {
-            BytesMut::new()
-        }
-    }
-
-    pub fn release_bytes(&self, mut bytes: BytesMut) {
-        let v = &mut self.0.borrow_mut();
-        if v.len() < 128 {
-            bytes.clear();
-            v.push_front(bytes);
-        }
     }
 }
 

@@ -98,14 +98,6 @@ impl<T: AsyncWrite, H: 'static> H1Writer<T, H> {
     }
 }
 
-impl<T: AsyncWrite, H: 'static> Drop for H1Writer<T, H> {
-    fn drop(&mut self) {
-        if let Some(bytes) = self.buffer.take_option() {
-            self.settings.release_bytes(bytes);
-        }
-    }
-}
-
 impl<T: AsyncWrite, H: 'static> Writer for H1Writer<T, H> {
     #[inline]
     fn written(&self) -> u64 {
